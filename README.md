@@ -1,1 +1,262 @@
-# checklist-carregadeiras
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<title>Checklist Carregadeiras</title>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<style>
+body{
+  font-family: Arial, Helvetica, sans-serif;
+  background:#f2f4f5;
+  margin:0;
+}
+
+.header{
+  background:#005f43;
+  color:white;
+  padding:15px 30px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.header img{ height:50px; }
+
+.titulo{
+  font-size:20px;
+  font-weight:bold;
+}
+
+.container{ padding:30px; }
+
+.info{
+  background:white;
+  padding:15px;
+  margin-bottom:20px;
+  border-left:5px solid #005f43;
+}
+
+.secao{
+  margin-top:30px;
+  margin-bottom:10px;
+  font-size:18px;
+  font-weight:bold;
+  color:#005f43;
+  border-bottom:2px solid #005f43;
+  padding-bottom:5px;
+}
+
+.pergunta{
+  background:white;
+  padding:15px;
+  margin-bottom:8px;
+  border-radius:5px;
+  box-shadow:0 1px 4px rgba(0,0,0,0.08);
+}
+
+textarea{
+  width:100%;
+  margin-top:8px;
+  padding:8px;
+  display:none;
+  border:1px solid #ccc;
+  border-radius:4px;
+}
+
+.btnGerar{
+  background:#005f43;
+  color:white;
+  padding:12px;
+  border:none;
+  width:100%;
+  font-size:16px;
+  cursor:pointer;
+  border-radius:5px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <img src="logo_vale.png" alt="Logo">
+  <div class="titulo">
+    Check List - Ferramentas e Recursos / Carregadeiras
+  </div>
+</div>
+
+<div class="container">
+
+<div class="info">
+  Responsável: <input type="text" id="responsavel">
+  <br><br>
+  Data: <span id="dataAtual"></span>
+</div>
+
+<div id="conteudo"></div>
+
+<br>
+<button class="btnGerar" onclick="gerarPDF()">Gerar PDF</button>
+
+</div>
+
+<script>
+
+// Data automática
+const hoje = new Date().toLocaleDateString();
+document.getElementById("dataAtual").innerText = hoje;
+
+// Estrutura por seções
+const estrutura = {
+
+"1. Quadro de ferramentas Q1": [
+"1.1 Dispositivos de manutenção",
+"1.2 Ferramentas em geral",
+"1.3 Insumos"
+],
+
+"2. Box 18": [
+"2.1 Carrinho de complemento de graxa",
+"2.2 Unidade hidráulica",
+"2.3 Paleteira elétrica"
+],
+
+"3. Área externa do box 18 / Escadas": [
+"3.1 Bombona de água",
+"3.2 Coletores de óleo",
+"3.3 Bombona de descarte de óleo",
+"3.4 Bombona de dreno / retorno de óleo",
+"3.5 Bomba diafragma vermelha 'sapo'",
+"3.6 Propulsores de graxa / cadeados",
+"3.7 Paleteira",
+"3.8 Carrinho plataforma",
+"3.9 Escadas",
+"3.10 Cadeados"
+],
+
+"4. Área de cavaletes": [
+"4.2 Cadeado de acesso"
+],
+
+"5. Box 16 e 17": [
+"5.1 Bombona de produto químico",
+"5.2 Banca de manutenção",
+"5.3 Banca de materiais preventiva"
+]
+
+};
+
+const container = document.getElementById("conteudo");
+let respostas = {};
+let contador = 0;
+
+for (let secao in estrutura){
+
+  const titulo = document.createElement("div");
+  titulo.className="secao";
+  titulo.innerText = secao;
+  container.appendChild(titulo);
+
+  estrutura[secao].forEach(pergunta=>{
+
+    const div = document.createElement("div");
+    div.className="pergunta";
+
+    div.innerHTML=`
+      <strong>${pergunta}</strong><br><br>
+
+      <label>
+        <input type="radio" name="q${contador}"
+        onchange="selecionar(${contador}, 'Conforme')"> Conforme
+      </label>
+
+      <label style="margin-left:15px;">
+        <input type="radio" name="q${contador}"
+        onchange="selecionar(${contador}, 'Não Conforme')"> Não Conforme
+      </label>
+
+      <label style="margin-left:15px;">
+        <input type="radio" name="q${contador}"
+        onchange="selecionar(${contador}, 'N/A')"> N/A
+      </label>
+
+      <textarea id="desvio_${contador}" placeholder="Descrever desvio"></textarea>
+    `;
+
+    container.appendChild(div);
+    contador++;
+  });
+}
+
+function selecionar(i,status){
+  respostas[i]=status;
+
+  const campo = document.getElementById("desvio_"+i);
+  if(status==="Não Conforme"){
+    campo.style.display="block";
+  }else{
+    campo.style.display="none";
+  }
+}
+
+function gerarPDF(){
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  let y=20;
+  let indice=0;
+
+  doc.setFontSize(14);
+  doc.text("Check List - Ferramentas e Recursos / Carregadeiras",10,y);
+  y+=8;
+
+  doc.setFontSize(11);
+  doc.text("Responsável: "+document.getElementById("responsavel").value,10,y);
+  y+=6;
+  doc.text("Data: "+hoje,10,y);
+  y+=10;
+
+  for (let secao in estrutura){
+
+    if(y>270){ doc.addPage(); y=20; }
+
+    doc.setFontSize(12);
+    doc.setTextColor(0,95,67);
+    doc.text(secao,10,y);
+    y+=8;
+
+    doc.setTextColor(0,0,0);
+    doc.setFontSize(10);
+
+    estrutura[secao].forEach(pergunta=>{
+
+      if(y>270){ doc.addPage(); y=20; }
+
+      let status = respostas[indice] || "Não Respondido";
+
+      doc.text(pergunta,10,y);
+      y+=6;
+
+      doc.text("Status: "+status,15,y);
+      y+=6;
+
+      if(status==="Não Conforme"){
+        let desvio=document.getElementById("desvio_"+indice).value;
+        doc.text("Desvio: "+desvio,15,y);
+        y+=6;
+      }
+
+      y+=4;
+      indice++;
+    });
+  }
+
+  doc.save("Checklist_Carregadeiras.pdf");
+}
+
+</script>
+
+</body>
+</html>
